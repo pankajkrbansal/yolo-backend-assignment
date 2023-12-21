@@ -1,8 +1,11 @@
 const express = require("express");
 const router = express.Router();
+const redis = require('redis');
+const redisClient = redis.createClient();
 const generateToken = require("../utilities/generateToken.js");
 const protect = require("../utilities/validator.js");
 const service = require('../services/service.js')
+const singleDeviceLogin = require('../utilities/singleDeviceLoginCheck.js')
 
 /**
  * Route: POST /
@@ -29,6 +32,9 @@ router.post("/login", async (req, res, next) => {
     // console.log("Request Data\n", req.body);
     let resp = await service.authUser(req.body);
     if (resp) {
+      req.session.userEmail = req.body.email // storing email for single device login check
+        // Store the session ID associated with the user's email in Redis
+      // redisClient.set(userEmail, req.session.id);
       generateToken(req, res, resp.email);
     }
   } catch (err) {
@@ -90,5 +96,21 @@ router.delete("/delete-post", protect, async (req, res, next) => {
       next(err);
     }
   });
+
+
+// Logout route to remove session from Redis
+router.get('/logout', (req, res) => {
+  const userEmail = req.session.email;
+
+  // Remove the session associated with the user's email from Redis on logout
+  redisClient.del(userEmail);
+
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).send('Error logging out');
+    }
+    res.send('Logged out successfully');
+  });
+});
 
 module.exports = router;

@@ -1,27 +1,56 @@
-const express = require('express')
-const router = require('./controller/routes')
-const dotenv = require('dotenv')
-const cookieParser = require("cookie-parser");
-const session = require('express-session');
+const express = require("express");
+const router = require("./controller/routes");
+const dotenv = require("dotenv");
+const session = require("express-session");
+const RedisStore = require("connect-redis").default;
+const { createClient } = require("redis");
+const rateLimit = require("express-rate-limit");
+const myInterceptor = require('./utilities/interceptor')
 
-dotenv.config()
-const app = express()
+dotenv.config();
+const app = express();
 
-const KEY = process.env.JWT_SECRET_KEY
+const KEY = process.env.JWT_SECRET_KEY;
 
-app.use(express.json())
-app.use(express.urlencoded({extended:true}))
-// app.use(cookieParser());
-app.use(session({
+// Initialize client.
+// let redisClient = createClient();
+
+// redisClient.connect().catch(console.error);
+
+// // Initialize store.
+// let redisStore = new RedisStore({
+//   client: redisClient,
+//   prefix: "myapp:",
+// });
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(
+  session({
     secret: KEY,
     resave: false,
     saveUninitialized: false,
-  }));
+    // store: redisStore
+  })
+);
 
-app.use('/api', router)
+// Apply rate limiting middleware
+const limiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute window
+  max: 100, // 100 requests per windowMs
+  message: "Too many requests from this IP, please try again later.",
+});
 
-const PORT = process.env.PORT
+// Apply the rate limiter to all requests
+app.use(limiter);
 
-app.listen(PORT,()=>{
-    console.log(`Server Running @ ${process.env.PORT}`);
-}, )
+// Apply interceptor globally to intercept all incoming requests
+app.use(myInterceptor);
+
+app.use("/api", router);
+
+const PORT = process.env.PORT;
+
+app.listen(PORT, () => {
+  console.log(`Server Running @ ${process.env.PORT}`);
+});
