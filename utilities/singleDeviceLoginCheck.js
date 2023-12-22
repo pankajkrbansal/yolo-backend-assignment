@@ -11,8 +11,6 @@ async function singleDeviceLogin(req, res, next) {
     if (emailFound) {
       return res.status(403).send("User already logged in from another device");
     }
-  } else {
-    next();
   }
   next()
 }

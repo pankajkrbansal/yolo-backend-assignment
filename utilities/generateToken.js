@@ -8,8 +8,8 @@ const generateToken = async (req, res, userEmail) => {
     });
     // Store the token in the session
     req.session.jwtToken = token;
-
-    return res.json("Logged In");
+    return;
+    // return res.json("Logged In");
   } catch (err) {
     throw err;
   }

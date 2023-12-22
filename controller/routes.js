@@ -32,11 +32,12 @@ router.post("/login", singleDeviceLogin, async (req, res, next) => {
   try {
     let resp = await service.authUser(req.body);
     if (resp) {
+      await generateToken(req, res, resp.email);
       await redisClient.connect().catch(console.error);
       req.session.email = req.body.email;
       // Store the session ID associated with the user's email in Redis
       await redisClient.set(req.body.email, req.session.id);
-      generateToken(req, res, resp.email);
+      res.json({message:'Logged In'})
     }
   } catch (err) {
     next(err);
@@ -101,17 +102,10 @@ router.delete("/delete-post", protect, async (req, res, next) => {
 router.get("/logout", async (req, res) => {
   try {
     const userEmail = req.session.email;
+    await redisClient.connect().catch(console.error);
 
     // Remove the session associated with the user's email from Redis on logout
-    await new Promise((resolve, reject) => {
-      redisClient.del(userEmail, (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
-        }
-      });
-    });
+    await redisClient.del(userEmail)
 
     req.session.destroy((err) => {
       if (err) {
