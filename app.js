@@ -6,6 +6,7 @@ const RedisStore = require("connect-redis").default;
 const { createClient } = require("redis");
 const rateLimit = require("express-rate-limit");
 const myInterceptor = require('./utilities/interceptor')
+const errorLogger = require('./utilities/errorLogger')
 
 dotenv.config();
 const app = express();
@@ -13,15 +14,15 @@ const app = express();
 const KEY = process.env.JWT_SECRET_KEY;
 
 // Initialize client.
-// let redisClient = createClient();
+let redisClient = createClient();
 
-// redisClient.connect().catch(console.error);
+redisClient.connect().catch(console.error);
 
-// // Initialize store.
-// let redisStore = new RedisStore({
-//   client: redisClient,
-//   prefix: "myapp:",
-// });
+// Initialize store.
+let redisStore = new RedisStore({
+  client: redisClient,
+  prefix: "myapp:",
+});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -30,7 +31,7 @@ app.use(
     secret: KEY,
     resave: false,
     saveUninitialized: false,
-    // store: redisStore
+    store: redisStore
   })
 );
 
@@ -48,6 +49,8 @@ app.use(limiter);
 app.use(myInterceptor);
 
 app.use("/api", router);
+
+app.use(errorLogger)
 
 const PORT = process.env.PORT;
 

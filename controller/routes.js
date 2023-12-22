@@ -27,7 +27,7 @@ router.post("/register", async (req, res, next) => {
  * Description: Login a user
  * Access: Public
  */
-router.post("/login", async (req, res, next) => {
+router.post("/login", singleDeviceLogin, async (req, res, next) => {
   try {
     // console.log("Request Data\n", req.body);
     let resp = await service.authUser(req.body);
