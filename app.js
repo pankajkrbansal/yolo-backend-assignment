@@ -16,7 +16,10 @@ const KEY = process.env.JWT_SECRET_KEY;
 // Initialize client.
 let redisClient = createClient();
 
-redisClient.connect().catch(console.error);
+(async()=>{
+  await redisClient.connect().catch(console.error);
+})()
+
 
 // Initialize store.
 let redisStore = new RedisStore({
